@@ -1,9 +1,10 @@
 const express = require("express");
+const axios = require("axios");
 
 const app = express();
 app.use(express.json());
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY; // Set this in Render environment
 
 app.post("/chat", async (req, res) => {
     const userMsg = req.body.text;
@@ -12,39 +13,21 @@ app.post("/chat", async (req, res) => {
     if (!userMsg) return res.json({ reply: "I didn't understand that!" });
 
     try {
-        // Send request to OpenAI
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${OPENAI_API_KEY}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                model: "gpt-3.5-turbo",
-                messages: [
-                    { role: "system", content: "You are a friendly Roblox NPC that chats with players." },
-                    { role: "user", content: userMsg }
-                ],
+        // Send request to Google Gemini (text-bison-001)
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${GOOGLE_API_KEY}`,
+            {
+                prompt: `You are a friendly Roblox NPC talking to a player named ${playerName}. Reply in a conversational style.\nPlayer: ${userMsg}\nNPC:`,
                 temperature: 0.7,
-                max_tokens: 150
-            })
-        });
+                candidateCount: 1,
+                maxOutputTokens: 200
+            }
+        );
 
-        const data = await response.json();
-        console.log("OpenAI response:", data); // Logs full API response
-
-        // Safely extract reply
-        let reply = "Hmm, I can't think right now 🤖";
-        if (data.choices && data.choices[0]?.message?.content) {
-            reply = data.choices[0].message.content.trim();
-        } else if (data.error && data.error.message) {
-            console.warn("OpenAI returned an error:", data.error.message);
-            reply = "Oops, something went wrong 🤖";
-        }
-
+        const reply = response.data?.candidates?.[0]?.output || "Hmm, I can't think right now 🤖";
         res.json({ reply });
     } catch (err) {
-        console.error("OpenAI request failed:", err);
+        console.error("Google Gemini request failed:", err.response?.data || err.message);
         res.json({ reply: "Oops, I can't think right now 🤖" });
     }
 });
