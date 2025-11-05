@@ -12,7 +12,7 @@ app.post("/chat", async (req, res) => {
     if (!userMsg) return res.json({ reply: "I didn't understand that!" });
 
     try {
-        // Use Node 18+ built-in fetch
+        // Send request to OpenAI
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -31,7 +31,17 @@ app.post("/chat", async (req, res) => {
         });
 
         const data = await response.json();
-        const reply = data.choices[0].message.content.trim();
+        console.log("OpenAI response:", data); // Logs full API response
+
+        // Safely extract reply
+        let reply = "Hmm, I can't think right now 🤖";
+        if (data.choices && data.choices[0]?.message?.content) {
+            reply = data.choices[0].message.content.trim();
+        } else if (data.error && data.error.message) {
+            console.warn("OpenAI returned an error:", data.error.message);
+            reply = "Oops, something went wrong 🤖";
+        }
+
         res.json({ reply });
     } catch (err) {
         console.error("OpenAI request failed:", err);
