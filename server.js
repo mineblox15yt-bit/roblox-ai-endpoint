@@ -1,5 +1,4 @@
 const express = require("express");
-const fetch = require("node-fetch");
 
 const app = express();
 app.use(express.json());
@@ -13,6 +12,7 @@ app.post("/chat", async (req, res) => {
     if (!userMsg) return res.json({ reply: "I didn't understand that!" });
 
     try {
+        // Use Node 18+ built-in fetch
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -34,7 +34,7 @@ app.post("/chat", async (req, res) => {
         const reply = data.choices[0].message.content.trim();
         res.json({ reply });
     } catch (err) {
-        console.error(err);
+        console.error("OpenAI request failed:", err);
         res.json({ reply: "Oops, I can't think right now 🤖" });
     }
 });
